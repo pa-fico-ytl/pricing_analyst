@@ -7,7 +7,7 @@ CLIENT_ID = '8395b6fb-53d2-4a1f-b582-828323691482'
 TENENT_ID = 'common'
 AUTHORITY_URL = f'https://login.microsoftonline.com/{TENENT_ID}'
 SCOPES = []  # This scope allows reading user profile data
-REDIRECT_URI = 'https://pricing-analyst.streamlit.app/redirect'  # Make sure this is added in Azure
+REDIRECT_URI = 'https://pricing-analyst.streamlit.app'  # Make sure this is added in Azure
 
 # MSAL app instance
 app = PublicClientApplication(CLIENT_ID, authority=AUTHORITY_URL)
