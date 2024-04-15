@@ -1,33 +1,39 @@
 import streamlit as st
 from msal import PublicClientApplication
+import webbrowser
 
 # Configure your MSAL client
-CLIENT_ID = 'Your-Application-Client-ID'
-AUTHORITY_URL = 'https://login.microsoftonline.com/Your-Tenant-ID'
-SCOPES = ['User.Read']  # This scope allows reading user profile data
+CLIENT_ID = '8395b6fb-53d2-4a1f-b582-828323691482'
+TENENT_ID = 'common'
+AUTHORITY_URL = f'https://login.microsoftonline.com/{TENENT_ID}'
+SCOPES = []  # This scope allows reading user profile data
+REDIRECT_URI = 'https://pricing-analyst.streamlit.app/redirect'  # Make sure this is added in Azure
 
-msal_app = PublicClientApplication(CLIENT_ID, authority=AUTHORITY_URL)
+# MSAL app instance
+app = PublicClientApplication(CLIENT_ID, authority=AUTHORITY_URL)
+st.write("Hello")
 
-# Authentication functions
 def authenticate():
-    session = st.session_state.get('auth_session', None)
-    if not session:
-        # Generate a login session
-        flow = msal_app.initiate_auth_code_flow(SCOPES, redirect_uri="http://localhost:8501/login")
-        st.session_state['auth_flow'] = flow
-        st.write('Please log in:', flow['auth_uri'])
-    elif 'user' in session:
-        st.write(f'Welcome {session["user"].get("preferred_username")}')
+    flow = app.initiate_auth_code_flow(SCOPES, redirect_uri=REDIRECT_URI)
+    st.session_state['auth_flow'] = flow
+    login_url = flow['auth_uri']
+    st.markdown(f'Please log in [here]({login_url}).')
 
-# Redirect handling route (you would need to manage routing and states appropriately)
-def login_callback():
-    flow = st.session_state.get('auth_flow', None)
-    if flow:
-        result = msal_app.acquire_token_by_auth_code_flow(flow, st.experimental_get_query_params())
-        if 'id_token_claims' in result:
-            st.session_state['auth_session'] = {'user': result['id_token_claims']}
-            st.experimental_rerun()
+if 'auth_flow' not in st.session_state:
+    st.button("Login with Microsoft", on_click=authenticate)
 
-st.button("Login", on_click=authenticate)
-if 'auth_session' in st.session_state:
-    authenticate()
+def handle_redirect():
+    if 'auth_flow' in st.session_state and st.query_params:
+        code = st.query_params.get('code', None)
+        if code:
+            flow = st.session_state['auth_flow']
+            result = app.acquire_token_by_auth_code_flow(flow, st.query_params)
+            if 'id_token_claims' in result:
+                st.session_state['user'] = result['id_token_claims']
+                user_email = st.session_state['user'].get('email', 'No email found')
+                st.write(f"Logged in as: {user_email}")
+
+if 'user' in st.session_state:
+    st.write(f"Welcome {st.session_state['user'].get('email', 'Unknown User')}!")
+else:
+    handle_redirect()
